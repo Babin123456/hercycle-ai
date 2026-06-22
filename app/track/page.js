@@ -133,10 +133,10 @@ export default function TrackPage() {
         setSelectedFlow(null)
         fetchCycleData()
       } else {
-        toast.error('❌ Failed to save')
+        toast.error(`❌ Failed to save: ${data.message || data.error || 'Unknown error'}`)
       }
-    } catch {
-      toast.error('❌ Failed to save')
+    } catch (err) {
+      toast.error(`❌ Failed to save: ${err.message || err}`)
     }
   }
 
@@ -145,19 +145,26 @@ export default function TrackPage() {
     const endDate = new Date(today)
     endDate.setDate(endDate.getDate() + 5)
 
-    const res = await fetch('/api/cycles', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        start_date:   today.toISOString().split('T')[0],
-        end_date:     endDate.toISOString().split('T')[0],
-        cycle_length: cycleData?.averageCycleLength || 28,
-      }),
-    })
-    const data = await res.json()
-    if (!data.success) { toast.error('❌ Could not start period'); return }
-    toast.success('🌸 Period started! Your cycle is now being tracked.')
-    fetchCycleData()
+    try {
+      const res = await fetch('/api/cycles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          start_date:   today.toISOString().split('T')[0],
+          end_date:     endDate.toISOString().split('T')[0],
+          cycle_length: cycleData?.averageCycleLength || 28,
+        }),
+      })
+      const data = await res.json()
+      if (!data.success) { 
+        toast.error(`❌ Could not start period: ${data.error || data.message || 'Unknown error'}`)
+        return 
+      }
+      toast.success('🌸 Period started! Your cycle is now being tracked.')
+      fetchCycleData()
+    } catch (err) {
+      toast.error(`❌ Could not start period: ${err.message || err}`)
+    }
   }
 
   const handleEndPeriod = async () => {
@@ -166,15 +173,22 @@ export default function TrackPage() {
     const open   = cycles.find(c => !c.end_date || new Date(c.end_date) > new Date())
     if (!open) { toast.error('No open period found to end'); return }
 
-    const res = await fetch('/api/cycles', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: open.id, end_date: today }),
-    })
-    const data = await res.json()
-    if (!data.success) { toast.error('❌ Could not end period'); return }
-    toast.success('✅ Period ended!')
-    fetchCycleData()
+    try {
+      const res = await fetch('/api/cycles', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: open.id, end_date: today }),
+      })
+      const data = await res.json()
+      if (!data.success) { 
+        toast.error(`❌ Could not end period: ${data.error || data.message || 'Unknown error'}`)
+        return 
+      }
+      toast.success('✅ Period ended!')
+      fetchCycleData()
+    } catch (err) {
+      toast.error(`❌ Could not end period: ${err.message || err}`)
+    }
   }
 
   const toggleSymptom = (s) =>

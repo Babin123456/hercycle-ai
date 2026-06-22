@@ -50,12 +50,12 @@ export async function POST(request) {
 
     if (error) {
       console.error('Supabase upsert error:', error)
-      return NextResponse.json({ success: false, message: 'Failed to log day' }, { status: 500 })
+      return NextResponse.json({ success: false, message: `Failed to log day: ${error.message}` }, { status: 500 })
     }
 
     return NextResponse.json({ success: true, message: 'Day logged successfully!' })
   } catch (error) {
     console.error('Error logging day:', error)
-    return NextResponse.json({ success: false, message: 'Internal Server Error' }, { status: 500 })
+    return NextResponse.json({ success: false, message: `Internal Server Error: ${error.message || error}` }, { status: 500 })
   }
 }
