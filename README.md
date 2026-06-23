@@ -298,9 +298,8 @@ Thank you to all the amazing people who built HerCycle AI!
 #### Early Contributors
 *Note: Contributed during initial prototype phase*
 
-- **zaaraf027-glitch** — ML + Database ([@zaaraf027-glitch](https://github.com/zaaraf027-glitch))
-- **Samiksha48787** — Backend + Presentation ([@Samiksha48787](https://github.com/Samiksha48787) · [LinkedIn](https://www.linkedin.com/in/samiksha-mishra-25939b370))
-- **mehakdutta2005-lab** — UI/UX Designer ([@mehakdutta2005-lab](https://github.com/mehakdutta2005-lab))
+- **zaaraf027-glitch** —  Database ([@zaaraf027-glitch](https://github.com/zaaraf027-glitch))
+- **Samiksha48787** —  Presentation ([@Samiksha48787](https://github.com/Samiksha48787))
 
 ---
 
