@@ -6,7 +6,7 @@ import { isAllowed } from '@/lib/rate-limiter'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+
 const TIMEOUT_MS = 8000; // 8 seconds timeout to prevent long hangs
 
 const chatPayloadSchema = z.object({
@@ -37,12 +37,29 @@ const withTimeout = async (promise, ms) => {
  * Primary AI Call: Google Gemini API
  */
 async function callGemini(message, systemPrompt) {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+  validateEnv();
+
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+  });
+
   const chat = model.startChat({
     history: [
-      { role: 'user', parts: [{ text: systemPrompt }] },
-      { role: 'model', parts: [{ text: 'I understand. I will provide helpful menstrual health guidance.' }] }
-    ]
+      {
+        role: 'user',
+        parts: [{ text: systemPrompt }],
+      },
+      {
+        role: 'model',
+        parts: [
+          {
+            text: 'I understand. I will provide helpful menstrual health guidance.',
+          },
+        ],
+      },
+    ],
   });
 
   const result = await chat.sendMessage(message);
@@ -53,6 +70,8 @@ async function callGemini(message, systemPrompt) {
  * Fallback AI Call: Groq API (llama3-8b-8192)
  */
 async function callGroq(message, systemPrompt) {
+  validateEnv();
+
   if (!process.env.GROQ_API_KEY) {
     throw new Error('GROQ_API_KEY environment variable is not defined.');
   }
