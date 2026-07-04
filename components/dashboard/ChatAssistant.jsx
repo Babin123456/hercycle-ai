@@ -94,7 +94,7 @@ export default function ChatAssistant({
           onChange={(e) => setChatInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
         />
-        <button className="chat-send-btn" onClick={handleSendMessage} aria-label="Send">➤</button>
+        <button className="chat-send-btn" onClick={()=>handleSendMessage()} aria-label="Send">➤</button>
       </div>
     </div>
   )
