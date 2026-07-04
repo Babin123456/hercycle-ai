@@ -19,8 +19,8 @@ export default function DailyLogPanel({
         <div className="symp-grid">
           {['Cramps', 'Headache', 'Bloating', 'Fatigue', 'Acne', 'Nausea'].map(symptom => (
             <button
-              type="button"
               key={symptom}
+              type='button'
               className={`symp-chip ${selectedSymptoms.includes(symptom) ? 'active' : ''}`}
               onClick={() => toggleSymptom(symptom)}
               aria-pressed={selectedSymptoms.includes(symptom)}
@@ -38,6 +38,7 @@ export default function DailyLogPanel({
           {['😊', '😐', '😢', '😡'].map((emoji, i) => (
             <button
               key={i}
+              type='button'
               className={`mood-btn ${selectedMood === emoji ? 'active' : ''}`}
               onClick={() => setSelectedMood(emoji)}
             >
@@ -55,13 +56,11 @@ export default function DailyLogPanel({
             { id: 'f4', label: 'Very Heavy' }
           ].map(flow => (
             <button
-              type="button"
               key={flow.id}
+              type='button'
               className={`flow-dot ${flow.id} ${selectedFlow === flow.id ? 'active' : ''}`}
               onClick={() => setSelectedFlow(flow.id)}
               title={flow.label}
-              aria-label={`${flow.label} flow`}
-              aria-pressed={selectedFlow === flow.id}
             ></button>
           ))}
         </div>
