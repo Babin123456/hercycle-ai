@@ -53,6 +53,7 @@ export const metadata = {
 
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
+import ChatFAB from '@/components/layout/ChatFAB';
 
 export default async function RootLayout({ children, params }) {
   let { locale } = await params;
@@ -90,6 +91,7 @@ export default async function RootLayout({ children, params }) {
                   <div className="particle" style={{ left: '91%', animationDuration: '12s', animationDelay: '8s' }}>&#127800;</div>
                 </div>
                 {children}
+                <ChatFAB />
                 <Toaster
                   position="top-center"
                   toastOptions={{
