@@ -7,9 +7,9 @@ const moods = [
 ]
 
 const symptomIcons = {
-  Cramps: "⚡",
+  Cramps: "🔥",
   Headache: "🤕",
-  Bloating: "🫧",
+  Bloating: "🎈",
   Fatigue: "😴",
   Acne: "✨",
   Nausea: "🤢"
