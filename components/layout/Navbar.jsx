@@ -7,9 +7,11 @@ import { useClerk } from '@clerk/nextjs'
 import { useOffline } from '@/lib/OfflineContext'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import { Settings, LogOut, Languages } from 'lucide-react'
+import PrivacySettingsModal from './PrivacySettingsModal'
 
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false)
   const t = useTranslations('Navbar')
   const locale = useLocale()
   const router = useRouter()
@@ -182,6 +184,15 @@ export default function Navbar() {
 
               <DropdownMenu.Separator className="h-[1px] bg-white/20 my-1 mx-1" />
 
+              <DropdownMenu.Item asChild onSelect={() => setIsPrivacyModalOpen(true)}>
+                <button
+                  className="w-full flex items-center gap-2 px-2 py-2 text-sm text-white hover:text-white hover:bg-white/15 rounded-lg transition-colors outline-none cursor-pointer mt-1 group"
+                >
+                  <Settings className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />
+                  <span>Privacy & Data</span>
+                </button>
+              </DropdownMenu.Item>
+
               <DropdownMenu.Item asChild>
                 <button
                   onClick={handleLogout}
@@ -195,6 +206,8 @@ export default function Navbar() {
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
       </div>
+
+      <PrivacySettingsModal isOpen={isPrivacyModalOpen} setIsOpen={setIsPrivacyModalOpen} />
     </nav>
   )
 }

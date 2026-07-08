@@ -3,7 +3,7 @@ import { SignIn } from '@clerk/nextjs'
 
 export default function LoginPage() {
   return (
-    <div style={styles.page}>
+    <div style={styles.page} suppressHydrationWarning>
       <div style={styles.blob1} />
       <div style={styles.blob2} />
       <div style={styles.center}>

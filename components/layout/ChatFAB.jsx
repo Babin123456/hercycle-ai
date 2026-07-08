@@ -13,7 +13,7 @@ export default function ChatFAB() {
   const router = useRouter()
   const locale = useLocale()
   const { offlineClient } = useOffline()
-  
+
   const isChatOpen = searchParams.get('chat') === 'open'
   const [isOpen, setIsOpen] = useState(isChatOpen)
   const [isRendered, setIsRendered] = useState(isChatOpen)
@@ -57,7 +57,7 @@ export default function ChatFAB() {
   const [chatMessages, setChatMessages] = useState([])
   const [chatInput, setChatInput] = useState('')
   const [isTyping, setIsTyping] = useState(false)
-  
+
   const tChat = useTranslations('Chat')
 
   // Load chat context when opened
@@ -114,12 +114,11 @@ export default function ChatFAB() {
     <>
       {/* Floating Window */}
       {isRendered && (
-        <div 
-          className={`fixed bottom-6 right-4 sm:right-8 sm:bottom-8 z-[100] w-[calc(100vw-32px)] sm:w-[420px] h-[600px] max-h-[85vh] flex flex-col shadow-2xl rounded-3xl overflow-hidden ${
-            isAnimatingOut 
-              ? 'animate-out zoom-out-95 slide-out-to-bottom-10 fade-out duration-300' 
+        <div
+          className={`fixed bottom-6 right-4 sm:right-8 sm:bottom-8 z-[100] w-[calc(100vw-32px)] sm:w-[420px] h-[600px] max-h-[85vh] flex flex-col shadow-2xl rounded-3xl overflow-hidden ${isAnimatingOut
+              ? 'animate-out zoom-out-95 slide-out-to-bottom-10 fade-out duration-300'
               : 'animate-in zoom-in-95 slide-in-from-bottom-10 fade-in duration-300'
-          }`}
+            }`}
           style={{
             background: 'var(--glass-bg)',
             backdropFilter: 'blur(32px) saturate(1.5)',
@@ -132,15 +131,15 @@ export default function ChatFAB() {
             <h3 className="text-white font-bold text-lg font-serif flex items-center gap-2">
               <span className="text-2xl">🤖</span> {tChat('header')}
             </h3>
-            <button 
-              onClick={toggleChat} 
+            <button
+              onClick={toggleChat}
               className="text-white/70 hover:text-white bg-white/5 hover:bg-white/20 p-1.5 rounded-full transition-colors"
               aria-label="Close Chat"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-          
+
           {/* Content Area - ChatAssistant fills this */}
           <div className="flex-1 overflow-hidden p-0 relative chat-floating-container">
             <style jsx global>{`
@@ -172,7 +171,7 @@ export default function ChatFAB() {
                 flex-shrink: 0;
               }
             `}</style>
-            
+
             <ChatAssistant
               chatMessages={chatMessages}
               isTyping={isTyping}
