@@ -1,17 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useClerk, useUser, useAuth } from '@clerk/nextjs'
+import { useAuth } from '@clerk/nextjs'
 import * as Dialog from '@radix-ui/react-dialog'
 import toast from 'react-hot-toast'
 import { Download, AlertTriangle, Trash2, X } from 'lucide-react'
 
 export default function PrivacySettingsModal({ isOpen, setIsOpen }) {
-  const router = useRouter()
-  const { user } = useUser()
   const { getToken } = useAuth()
-  const { signOut } = useClerk()
   const [isDeleting, setIsDeleting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
   const [deleteConfirmation, setDeleteConfirmation] = useState('')
