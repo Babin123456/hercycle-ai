@@ -106,6 +106,10 @@ export default function ChatFAB() {
 
   const tNavbar = useTranslations('Navbar')
 
+  if (pathname?.includes('/auth') || pathname?.includes('/sign-in') || pathname?.includes('/sign-up') || pathname?.includes('/login')) {
+    return null
+  }
+
   return (
     <>
       {/* Floating Window */}
