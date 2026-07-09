@@ -106,7 +106,7 @@ export default function ChatFAB() {
 
   const tNavbar = useTranslations('Navbar')
 
-  if (pathname?.includes('/auth') || pathname?.includes('/sign-in') || pathname?.includes('/sign-up') || pathname?.includes('/login') || pathname?.includes('/partner')) {
+  if (pathname?.includes('/auth') || pathname?.includes('/sign-in') || pathname?.includes('/sign-up') || pathname?.includes('/login') || pathname?.includes('/partner') || pathname?.includes('/onboarding')) {
     return null
   }
 
