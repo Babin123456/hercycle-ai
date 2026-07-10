@@ -99,7 +99,7 @@ function buildCalendarDays(year, month, periodDays, ovulationDays, predictedDays
     else if (predictedDays?.has(iso))                 type = 'predicted'
     else if (ovulationDays?.has(iso))                 type = 'ovulation'
     if (isToday) type = type === 'normal' ? 'today' : type  // today badge on top of any type
-    days.push({ type, label: i, isToday })
+    days.push({ type, label: i, isToday, iso })
   }
 
   return days
@@ -138,6 +138,10 @@ const HerCycleApp = () => {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [dataLoaded, setDataLoaded] = useState(false)
 
+  const todayStr = now.toISOString().split('T')[0]
+  const [selectedDate, setSelectedDate] = useState(todayStr)
+  const [allLogs, setAllLogs] = useState([])
+
   const openLogDrawer  = () => setIsLogOpen(true)
   const closeLogDrawer = () => setIsLogOpen(false)
 
@@ -156,32 +160,6 @@ const HerCycleApp = () => {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [])
-
-  // Check session on mount and load data
-  useEffect(() => {
-    if (!isLoaded || !user) return
-    if (!isSignedIn) {
-      router.push(`/${locale}/auth/login`)
-      return
-    }
-
-    const role = user?.publicMetadata?.role
-    if (!role) {
-      router.push(`/${locale}/onboarding`)
-      return
-    }
-    if (role === 'partner') {
-      router.push(`/${locale}/partner`)
-      return
-    }
-
-    Promise.all([fetchCycleData(), fetchPCODRisk()])
-    
-    // Set initial greeting after mount to avoid hydration mismatch
-    if (chatMessages.length === 0) {
-      setChatMessages([{ role: 'ai', text: tChat('greeting') }])
-    }
-  }, [isLoaded, isSignedIn, user, router, tChat, locale])
 
   const fetchCycleData = async () => {
     try {
@@ -226,6 +204,70 @@ const HerCycleApp = () => {
     }
   }
 
+  const fetchLogForDate = async (date) => {
+    try {
+      const data = await offlineClient.fetchTodayLog(date)
+      if (data.success && data.data) {
+        setSelectedSymptoms(data.data.symptoms || [])
+        setSelectedMood(data.data.mood || null)
+        setSelectedFlow(data.data.flow || null)
+        setSelectedDischarge(data.data.cervical_discharge || null)
+      } else {
+        setSelectedSymptoms([])
+        setSelectedMood(null)
+        setSelectedFlow(null)
+        setSelectedDischarge(null)
+      }
+    } catch (e) {
+      console.error(e)
+      setSelectedSymptoms([])
+      setSelectedMood(null)
+      setSelectedFlow(null)
+      setSelectedDischarge(null)
+    }
+  }
+
+  const fetchAllLogs = async () => {
+    try {
+      const data = await offlineClient.fetchAllLogs()
+      if (data.success && data.data) {
+        setAllLogs(data.data)
+      }
+    } catch (e) { console.error(e) }
+  }
+
+  // Check session on mount and load data
+  useEffect(() => {
+    if (!isLoaded || !user) return
+    if (!isSignedIn) {
+      router.push(`/${locale}/auth/login`)
+      return
+    }
+
+    const role = user?.publicMetadata?.role
+    if (!role) {
+      router.push(`/${locale}/onboarding`)
+      return
+    }
+    if (role === 'partner') {
+      router.push(`/${locale}/partner`)
+      return
+    }
+
+    Promise.all([fetchCycleData(), fetchPCODRisk(), fetchAllLogs(), fetchLogForDate(selectedDate)])
+    
+    // Set initial greeting after mount to avoid hydration mismatch
+    if (chatMessages.length === 0) {
+      setChatMessages([{ role: 'ai', text: tChat('greeting') }])
+    }
+  }, [isLoaded, isSignedIn, user, router, tChat, locale])
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn && selectedDate) {
+      fetchLogForDate(selectedDate)
+    }
+  }, [selectedDate, isLoaded, isSignedIn])
+
   const handleSendMessage = async (directMessage) => {
     const userMessage = directMessage || chatInput
     if (!userMessage.trim()) return
@@ -263,7 +305,7 @@ const HerCycleApp = () => {
   const handleSaveLog = async () => {
     try {
       const logData = {
-        date: new Date().toISOString().split('T')[0],
+        date: selectedDate,
         symptoms: selectedSymptoms,
         mood: selectedMood,
         flow: selectedFlow,
@@ -276,12 +318,9 @@ const HerCycleApp = () => {
         } else {
           toast.success('✅ Log saved!')
         }
-        setSelectedSymptoms([])
-        setSelectedMood(null)
-        setSelectedFlow(null)
-        setSelectedDischarge(null)
         setSaveTrigger(prev => prev + 1)
         fetchCycleData()
+        fetchAllLogs()
       } else {
         toast.error('❌ Failed to save')
       }
@@ -307,7 +346,7 @@ const HerCycleApp = () => {
     dateSets.predictedDays,
     dateSets.today
   )
-  const { periodDays, ovulationDays, predictedDays, today: todayStr } = dateSets
+  const { periodDays, ovulationDays, predictedDays } = dateSets
 
   // Days until next period
   const daysUntilNext = cycleData?.nextPeriodDate
@@ -368,6 +407,11 @@ const HerCycleApp = () => {
     }
   }
 
+  const handleSelectDate = (dateIso) => {
+    setSelectedDate(dateIso)
+    setIsLogOpen(true)
+  }
+
   return (
     <>
       {/* ── Onboarding Modal ── */}
@@ -384,7 +428,9 @@ const HerCycleApp = () => {
         <div className="drawer-overlay" onClick={closeLogDrawer} role="dialog" aria-modal="true" aria-label="Log Your Day">
           <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
             <div className="drawer-header">
-              <h2>{tHeadings('log')} 💕</h2>
+              <h2>
+                {selectedDate === todayStr ? tHeadings('log') : (locale === 'hi' ? `${selectedDate} के लक्षण` : `Log Symptoms for ${selectedDate}`)} 💕
+              </h2>
               <button className="drawer-close" onClick={closeLogDrawer} aria-label="Close">✕</button>
             </div>
             <div className="drawer-grid">
@@ -398,6 +444,7 @@ const HerCycleApp = () => {
                 handleSaveLog={async () => { await handleSaveLog(); closeLogDrawer() }}
                 cycleData={cycleData}
                 activeLang={activeLang}
+                selectedDate={selectedDate}
               />
             </div>
           </div>
@@ -417,6 +464,13 @@ const HerCycleApp = () => {
             averageCycleLength={cycleData?.averageCycleLength || 28}
             daysUntilNext={daysUntilNext}
             activeLang={activeLang}
+            selectedDate={selectedDate}
+            onSelectDate={handleSelectDate}
+            logMap={new Map(allLogs.map(log => [log.date, log]))}
+            viewYear={viewYear}
+            setViewYear={setViewYear}
+            viewMonth={viewMonth}
+            setViewMonth={setViewMonth}
           />
         </div>
 
@@ -456,6 +510,7 @@ const HerCycleApp = () => {
             handleSaveLog={handleSaveLog} 
             cycleData={cycleData} 
             activeLang={activeLang}
+            selectedDate={selectedDate}
           />
           <PredictionCard cycleData={cycleData} activeLang={activeLang} />
         </div>

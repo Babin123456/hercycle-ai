@@ -720,6 +720,71 @@ nav ul li a.active {
   font-weight: 500;
 }
 
+.cal-d:focus-visible {
+  outline: 2px solid var(--rose-bright);
+  outline-offset: 1px;
+}
+
+.cal-d.selected {
+  outline: 2px solid var(--rose-bright);
+  outline-offset: 2px;
+  box-shadow: 0 0 10px rgba(244, 114, 182, 0.6);
+}
+
+.log-indicator-dot {
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--rose-bright);
+  box-shadow: 0 0 4px var(--rose-bright);
+  transition: all 0.18s;
+}
+
+.cal-d:hover .log-indicator-dot {
+  background-color: white;
+  box-shadow: 0 0 4px white;
+}
+
+.cal-d.period .log-indicator-dot {
+  background-color: white;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+}
+
+.cal-selectors {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cal-select {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: white;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 2px 6px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.18s;
+}
+
+.cal-select:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.cal-select:focus-visible {
+  border-color: var(--rose-bright);
+}
+
+.cal-select option {
+  background: #1f1224;
+  color: white;
+}
+
 /* Legend */
 .cal-legend {
   display: flex;
