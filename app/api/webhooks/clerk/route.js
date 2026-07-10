@@ -43,6 +43,26 @@ export async function POST(request) {
   const eventType = evt.type
   logger.info(`Received Clerk webhook event: ${eventType}`);
 
+  if (eventType === 'user.created') {
+    const { id: clerkUserId } = evt.data
+    try {
+      const supabaseAdmin = getSupabaseAdmin()
+      const { error } = await supabaseAdmin
+        .from('users')
+        .insert([{ id: clerkUserId }])
+      
+      if (error) {
+        logger.error(`Webhook: failed to insert user ${clerkUserId}:`, error.message);
+        throw new Error(error.message);
+      }
+      logger.info(`Webhook user.created: Inserted user ${clerkUserId}`);
+      return NextResponse.json({ success: true, message: 'User created successfully' })
+    } catch (err) {
+      logger.error(`Webhook: user creation failed for user ${clerkUserId}:`, err.message || err);
+      return NextResponse.json({ error: 'Database operation failed' }, { status: 500 })
+    }
+  }
+
   if (eventType === 'user.deleted') {
     const { id: clerkUserId } = evt.data
 
@@ -56,25 +76,15 @@ export async function POST(request) {
       
       logger.info(`Webhook user.deleted: Purging database records for user ${clerkUserId}`);
       
-      // Perform deletion across cycles and daily_logs tables
-      const { error: cyclesErr } = await supabaseAdmin
-        .from('cycles')
+      // Delete from users table (cascades to cycles and daily_logs)
+      const { error } = await supabaseAdmin
+        .from('users')
         .delete()
-        .eq('user_id', clerkUserId)
+        .eq('id', clerkUserId)
 
-      if (cyclesErr) {
-        logger.error(`Webhook: failed to delete cycles for user ${clerkUserId}:`, cyclesErr.message);
-        throw new Error(cyclesErr.message);
-      }
-
-      const { error: logsErr } = await supabaseAdmin
-        .from('daily_logs')
-        .delete()
-        .eq('user_id', clerkUserId)
-
-      if (logsErr) {
-        logger.error(`Webhook: failed to delete logs for user ${clerkUserId}:`, logsErr.message);
-        throw new Error(logsErr.message);
+      if (error) {
+        logger.error(`Webhook: failed to delete user ${clerkUserId}:`, error.message);
+        throw new Error(error.message);
       }
 
       logger.info(`Webhook user.deleted: Successfully purged all database records for user ${clerkUserId}`);
