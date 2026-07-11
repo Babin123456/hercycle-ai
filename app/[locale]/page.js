@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth, useUser } from '@clerk/nextjs'
 import toast from 'react-hot-toast'
-
+import CyclePhaseCard from '@/components/dashboard/CyclePhaseCard'
+import {
+  calculateCyclePhase,
+  getLatestCycle,
+} from '@/lib/calculateCyclePhase'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import HeroSection from '@/components/dashboard/HeroSection'
@@ -438,10 +442,39 @@ const HerCycleApp = () => {
     }
   }
 
-  const handleSelectDate = (dateIso) => {
-    setSelectedDate(dateIso)
-    setIsLogOpen(true)
-  }
+  
+  const latestCycle = getLatestCycle(cycleData?.cycles)
+
+const periodStart =
+  latestCycle?.start_date ||
+  latestCycle?.period_start ||
+  null
+
+const periodEnd =
+  latestCycle?.end_date ||
+  latestCycle?.period_end ||
+  null
+
+const inferredPeriodLength = periodStart && periodEnd
+  ? Math.max(
+      1,
+      Math.round(
+        (
+          new Date(`${periodEnd}T00:00:00`) -
+          new Date(`${periodStart}T00:00:00`)
+        ) / 86400000
+      ) + 1
+    )
+  : 5
+
+const phaseInfo = calculateCyclePhase({
+  periodStart,
+  cycleLength:
+    latestCycle?.cycle_length ||
+    cycleData?.averageCycleLength ||
+    28,
+  periodLength: inferredPeriodLength,
+})
 
   return (
     <>
@@ -504,6 +537,15 @@ const HerCycleApp = () => {
             viewMonth={viewMonth}
             setViewMonth={setViewMonth}
           />
+        </div>
+        
+        <div style={{ marginTop: '1.5rem' }}>
+        <CyclePhaseCard
+        phaseKey={phaseInfo.phaseKey}
+        cycleDay={phaseInfo.cycleDay}
+        ovulationDay={phaseInfo.ovulationDay}
+        hasData={phaseInfo.hasData}
+        />
         </div>
 
         <FeaturesSection activeLang={activeLang} />
