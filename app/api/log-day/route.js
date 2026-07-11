@@ -1,7 +1,9 @@
+
+
 import { NextResponse } from 'next/server'
 import { getAuthUserId } from '@/lib/clerk-server'
 import { getSupabaseAdmin } from '@/lib/supabase-admin'
-import { crudLimiter, getRateLimitIdentifier } from '@/lib/rateLimiter'
+import { crudLimiter } from '@/lib/rateLimiter'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
 
@@ -17,8 +19,7 @@ const logPostSchema = z.object({
 export async function GET(request) {
   // ============ RATE LIMITING ============
   try {
-    const identifier = await getRateLimitIdentifier(request);
-    await crudLimiter.check(20, identifier); // 20 requests per minute
+    await crudLimiter.check(request); // 30 requests per minute (see lib/rateLimiter.js)
   } catch (rateLimitError) {
     console.warn(`[Rate Limit] Log-day GET endpoint: ${rateLimitError.message}`);
     return NextResponse.json(
@@ -38,7 +39,6 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
 
-    // Verify date parameter format
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       logger.warn(`Invalid date format requested by user ${userId}: ${date}`);
       return NextResponse.json({ success: false, message: 'Bad Request: Invalid date format. Use YYYY-MM-DD.' }, { status: 400 })
@@ -69,8 +69,7 @@ export async function GET(request) {
 export async function POST(request) {
   // ============ RATE LIMITING ============
   try {
-    const identifier = await getRateLimitIdentifier(request);
-    await crudLimiter.check(20, identifier); // 20 requests per minute
+    await crudLimiter.check(request);
   } catch (rateLimitError) {
     console.warn(`[Rate Limit] Log-day POST endpoint: ${rateLimitError.message}`);
     return NextResponse.json(
@@ -87,7 +86,6 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
     }
 
-    // Payload Validation
     const json = await request.json()
     const result = logPostSchema.safeParse(json)
     if (!result.success) {
@@ -107,7 +105,7 @@ export async function POST(request) {
 
     if (error) {
       logger.error(`Database error upserting daily log for user ${userId} on date ${date}:`, error.message);
-      return NextResponse.json({ success: false, message: `Failed to log day: ${error.message}` }, { status: 500 })
+      return NextResponse.json({ success: false, message: `Failed to log day: ${error.message}` }, {status: 500 })
     }
 
     logger.info(`Successfully upserted daily log for user ${userId} on date ${date}`);
