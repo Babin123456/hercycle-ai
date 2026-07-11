@@ -1,4 +1,5 @@
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
+
 const moods = [
   { emoji: '😊', label: 'Happy' },
   { emoji: '😐', label: 'Okay' },
@@ -23,19 +24,49 @@ export default function DailyLogPanel({
   selectedFlow,
   setSelectedFlow,
   handleSaveLog,
-  cycleData
+  cycleData,
+  selectedDate
 }) {
   const t = useTranslations('log')
   const tSymp = useTranslations('symptoms')
   const tFlow = useTranslations('flow')
+  const locale = useLocale()
+
+  const todayStr = new Date().toISOString().split('T')[0]
+  const isToday = !selectedDate || selectedDate === todayStr
+
+  const formattedDate = selectedDate ? (() => {
+    const [y, m, d] = selectedDate.split('-').map(Number)
+    const dateObj = new Date(y, m - 1, d)
+    return new Intl.DateTimeFormat(locale === 'hi' ? 'hi-IN' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(dateObj)
+  })() : ''
+
+  const displaySymptomsTitle = isToday
+    ? t('symptoms')
+    : locale === 'hi'
+      ? `${formattedDate} के लक्षण`
+      : `Symptoms for ${formattedDate}`
+
+  const displayMoodTitle = isToday
+    ? t('mood')
+    : locale === 'hi'
+      ? `${formattedDate} का मूड`
+      : `Mood for ${formattedDate}`
+
+  const displaySelectedText = isToday
+    ? (locale === 'hi' ? 'आज चयनित' : 'Selected Today')
+    : (locale === 'hi' ? 'चयनित' : 'Selected')
+
+  const displayCommonText = locale === 'hi' ? 'सामान्य लक्षण' : 'Common Symptoms'
+
   return (
     <>
       {/* Symptoms Panel */}
       <div className="panel glass-dim">
-        <h4>{t('symptoms')}</h4>
+        <h4>{displaySymptomsTitle}</h4>
 
         <div className="panel-subtitle">
-          Common Symptoms
+          {displayCommonText}
         </div>
 
         <div className="symp-grid">
@@ -62,7 +93,7 @@ export default function DailyLogPanel({
         <div className="panel-divider" />
 
         <div className="selection-info">
-          <span>Selected Today</span>
+          <span>{displaySelectedText}</span>
 
           <strong>
             {selectedSymptoms.length === 0
@@ -75,7 +106,7 @@ export default function DailyLogPanel({
       {/* Mood & Flow Panel */}
       <div className="panel glass-dim">
         <div className="panel-subtitle">
-          Mood
+          {displayMoodTitle}
         </div>
 
         <div className="mood-row">
@@ -129,5 +160,5 @@ export default function DailyLogPanel({
         </button>
       </div>
     </>
-  );
+  )
 }

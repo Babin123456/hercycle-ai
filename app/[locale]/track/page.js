@@ -68,7 +68,7 @@ function buildCalendarDays(year, month, periodDays, ovulationDays, predictedDays
     else if (predictedDays?.has(iso)) type = 'predicted'
     else if (ovulationDays?.has(iso)) type = 'ovulation'
     if (isToday && type === 'normal') type = 'today'
-    days.push({ type, label: i, isToday })
+    days.push({ type, label: i, isToday, iso })
   }
   return days
 }
@@ -85,6 +85,11 @@ export default function TrackPage() {
   const [viewYear,  setViewYear]  = useState(now.getFullYear())
   const [viewMonth, setViewMonth] = useState(now.getMonth())
   const [cycleData, setCycleData] = useState(null)
+  
+  const todayStr = now.toISOString().split('T')[0]
+  const [selectedDate, setSelectedDate] = useState(todayStr)
+  const [allLogs, setAllLogs] = useState([])
+  
   const [selectedSymptoms, setSelectedSymptoms] = useState([])
   const [selectedMood,     setSelectedMood]     = useState(null)
   const [selectedFlow,     setSelectedFlow]     = useState(null)
@@ -98,14 +103,32 @@ export default function TrackPage() {
     finally { setLoading(false) }
   }
 
-  const fetchTodayLog = async () => {
+  const fetchLogForDate = async (date) => {
+    try {
+      const data = await offlineClient.fetchTodayLog(date)
+      if (data.success && data.data) {
+        setSelectedSymptoms(data.data.symptoms || [])
+        setSelectedMood(data.data.mood || null)
+        setSelectedFlow(data.data.flow || null)
+      } else {
+        setSelectedSymptoms([])
+        setSelectedMood(null)
+        setSelectedFlow(null)
+      }
+    } catch (e) {
+      console.error(e)
+      setSelectedSymptoms([])
+      setSelectedMood(null)
+      setSelectedFlow(null)
+    }
+  }
+
+  const fetchAllLogs = async () => {
     try {
       const today = new Date().toISOString().split('T')[0]
       const data = await offlineClient.fetchTodayLog(today, encryptionKey)
       if (data.success && data.data) {
-        if (data.data.symptoms) setSelectedSymptoms(data.data.symptoms)
-        if (data.data.mood)     setSelectedMood(data.data.mood)
-        if (data.data.flow)     setSelectedFlow(data.data.flow)
+        setAllLogs(data.data)
       }
     } catch (e) { console.error(e) }
   }
@@ -118,10 +141,16 @@ export default function TrackPage() {
     }
   }, [isLoaded, isSignedIn, router, isKeyReady])
 
+  useEffect(() => {
+    if (isLoaded && isSignedIn && selectedDate) {
+      fetchLogForDate(selectedDate)
+    }
+  }, [selectedDate, isLoaded, isSignedIn])
+
   const handleSaveLog = async () => {
     try {
       const logData = {
-        date: new Date().toISOString().split('T')[0],
+        date: selectedDate,
         symptoms: selectedSymptoms,
         mood: selectedMood,
         flow: selectedFlow,
@@ -133,10 +162,8 @@ export default function TrackPage() {
         } else {
           toast.success('✅ Log saved!')
         }
-        setSelectedSymptoms([])
-        setSelectedMood(null)
-        setSelectedFlow(null)
         fetchCycleData()
+        fetchAllLogs()
       } else {
         toast.error(`❌ Failed to save: ${data.message || data.error || 'Unknown error'}`)
       }
@@ -266,6 +293,7 @@ export default function TrackPage() {
               border: '1px solid rgba(232,82,126,0.35)',
               borderRadius: 12,
               padding: '0.9rem 1.2rem',
+              color: TEXT_PRIMARY
             }}>
               {t('noCycles')}
             </div>
@@ -281,6 +309,13 @@ export default function TrackPage() {
               averageCycleLength={cycleData?.averageCycleLength || 28}
               daysUntilNext={daysUntilNext}
               activeLang="EN"
+              selectedDate={selectedDate}
+              onSelectDate={setSelectedDate}
+              logMap={new Map(allLogs.map(log => [log.date, log]))}
+              viewYear={viewYear}
+              setViewYear={setViewYear}
+              viewMonth={viewMonth}
+              setViewMonth={setViewMonth}
             />
           </div>
 
@@ -291,7 +326,7 @@ export default function TrackPage() {
             fontWeight: 700,
             marginBottom: '1.25rem',
           }}>
-            {t('logToday')}
+            {selectedDate === todayStr ? t('logToday') : (locale === 'hi' ? `${selectedDate} के लक्षण लॉग करें` : `Log Symptoms for ${selectedDate}`)}
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
             <DailyLogPanel
@@ -304,6 +339,7 @@ export default function TrackPage() {
               handleSaveLog={handleSaveLog}
               cycleData={cycleData}
               activeLang="EN"
+              selectedDate={selectedDate}
             />
           </div>
 

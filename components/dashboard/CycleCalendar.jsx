@@ -2,21 +2,8 @@ import { useTranslations, useLocale } from 'next-intl'
 
 /**
  * CycleCalendar — renders a monthly grid with period/ovulation/predicted/today markers.
- *
- * Props (two modes, both supported):
- *  MODE A — pre-built array (current):
- *    calendarDays: Array<{ type: 'header'|'empty'|'normal'|'period'|'ovulation'|'predicted'|'today', label, isToday? }>
- *
- *  MODE B — explicit date Sets (new, as requested):
- *    periodDays:    Set<'YYYY-MM-DD'>
- *    ovulationDays: Set<'YYYY-MM-DD'>
- *    predictedDays: Set<'YYYY-MM-DD'>
- *    today:         'YYYY-MM-DD'
- *    viewYear:      number
- *    viewMonth:     number   (0-indexed)
- *
- *  Shared props:
- *    currentMonth, onPrevMonth, onNextMonth, averageCycleLength, daysUntilNext, activeLang
+ * Now fully interactive with custom date selection, logged symptoms display,
+ * month/year dropdowns, and arrow-key keyboard navigation.
  */
 export default function CycleCalendar({
   // Mode A
@@ -28,15 +15,27 @@ export default function CycleCalendar({
   today: todayStr,
   viewYear,
   viewMonth,
+  setViewYear,
+  setViewMonth,
   // Shared
   currentMonth,
   onPrevMonth,
   onNextMonth,
   averageCycleLength,
-  daysUntilNext
+  daysUntilNext,
+  // Interactive Props
+  selectedDate,
+  onSelectDate,
+  logMap
 }) {
   const t = useTranslations('cycle')
+  const tSymp = useTranslations('symptoms')
   const locale = useLocale()
+
+  const monthNames = locale === 'hi'
+    ? ['जनवरी', 'फ़रवरी', 'मार्च', 'अप्रैल', 'मई', 'जून', 'जुलाई', 'अगस्त', 'सितंबर', 'अक्टूबर', 'नवंबर', 'दिसंबर']
+    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
   // Build calendar from explicit Sets if Mode B props are provided
   let calendarDays = calendarDaysProp
   if (!calendarDays && viewYear != null && viewMonth != null) {
@@ -59,15 +58,72 @@ export default function CycleCalendar({
       else if (predictedDays?.has(iso))         type = 'predicted'
       else if (ovulationDays?.has(iso))         type = 'ovulation'
       if (isToday && type === 'normal')         type = 'today'
-      days.push({ type, label: i, isToday })
+      days.push({ type, label: i, isToday, iso })
     }
     calendarDays = days
+  }
+
+  const handleKeyDown = (e, index, dayIso) => {
+    let targetIdx = -1
+    if (e.key === 'ArrowLeft') {
+      targetIdx = index - 1
+    } else if (e.key === 'ArrowRight') {
+      targetIdx = index + 1
+    } else if (e.key === 'ArrowUp') {
+      targetIdx = index - 7
+    } else if (e.key === 'ArrowDown') {
+      targetIdx = index + 7
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      if (dayIso) {
+        onSelectDate?.(dayIso)
+      }
+      return
+    } else {
+      return
+    }
+
+    if (targetIdx >= 0 && targetIdx < (calendarDays || []).length) {
+      const targetDay = calendarDays[targetIdx]
+      if (targetDay && targetDay.type !== 'header' && targetDay.type !== 'empty') {
+        const el = document.querySelector(`[data-day-idx="${targetIdx}"]`)
+        if (el && el.getAttribute('tabindex') === '0') {
+          e.preventDefault()
+          el.focus()
+        }
+      }
+    }
   }
 
   return (
     <div className="cycle-card glass">
       <div className="cycle-card-header">
-        <h3>{currentMonth}</h3>
+        {setViewMonth && setViewYear && viewYear != null && viewMonth != null ? (
+          <div className="cal-selectors">
+            <select
+              value={viewMonth}
+              onChange={(e) => setViewMonth(parseInt(e.target.value))}
+              className="cal-select"
+              aria-label="Select month"
+            >
+              {monthNames.map((name, index) => (
+                <option key={index} value={index}>{name}</option>
+              ))}
+            </select>
+            <select
+              value={viewYear}
+              onChange={(e) => setViewYear(parseInt(e.target.value))}
+              className="cal-select"
+              aria-label="Select year"
+            >
+              {Array.from({ length: 15 }, (_, i) => new Date().getFullYear() - 7 + i).map(year => (
+                <option key={year} value={year}>{year}</option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <h3>{currentMonth}</h3>
+        )}
         <div className="month-nav">
           <button onClick={onPrevMonth} aria-label="Previous month">‹</button>
           <button onClick={onNextMonth} aria-label="Next month">›</button>
@@ -75,23 +131,78 @@ export default function CycleCalendar({
       </div>
 
       <div className="mini-cal">
-        {(calendarDays || []).map((day, i) => (
-          <div
-            key={i}
-            className={[
-              'cal-d',
-              day.type === 'header'    ? 'header'    : '',
-              day.type === 'empty'     ? 'empty'     : '',
-              day.type === 'period'    ? 'period'    : '',
-              day.type === 'predicted' ? 'predicted' : '',
-              day.type === 'ovulation' ? 'ovulation' : '',
-              day.type === 'today'     ? 'today'     : '',
-              day.isToday && day.type !== 'today' ? 'today-ring' : '',
-            ].join(' ').trim()}
-          >
-            {day.label}
-          </div>
-        ))}
+        {(calendarDays || []).map((day, i) => {
+          const isHeader = day.type === 'header'
+          const isEmpty = day.type === 'empty'
+          const dayIso = day.iso || (!isHeader && !isEmpty && viewYear != null && viewMonth != null
+            ? `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day.label).padStart(2, '0')}`
+            : null)
+
+          const isSelected = dayIso && dayIso === selectedDate
+          const hasLog = dayIso && logMap && logMap.has(dayIso)
+          const log = hasLog ? logMap.get(dayIso) : null
+
+          let tooltipTitle = ''
+          if (dayIso) {
+            const phaseLabel = day.type === 'period' ? t('period')
+              : day.type === 'predicted' ? t('predicted')
+              : day.type === 'ovulation' ? t('ovulation')
+              : day.type === 'today' ? 'Today'
+              : ''
+
+            if (phaseLabel) tooltipTitle += `${phaseLabel}\n`
+
+            if (hasLog && log) {
+              const items = []
+              if (log.symptoms && log.symptoms.length > 0) {
+                const sympsList = log.symptoms.map(s => {
+                  try { return tSymp(s) } catch { return s }
+                })
+                items.push(`Symptoms: ${sympsList.join(', ')}`)
+              }
+              if (log.mood) {
+                items.push(`Mood: ${log.mood}`)
+              }
+              if (log.flow) {
+                const flowLabels = { f1: 'Light', f2: 'Medium', f3: 'Heavy', f4: 'Very Heavy' }
+                const label = flowLabels[log.flow] || log.flow
+                items.push(`Flow: ${label}`)
+              }
+              if (items.length > 0) {
+                tooltipTitle += `Logged:\n- ${items.join('\n- ')}`
+              }
+            }
+          }
+
+          const isInteractive = dayIso && onSelectDate
+
+          return (
+            <div
+              key={i}
+              data-day-idx={i}
+              tabIndex={isInteractive ? 0 : undefined}
+              role={isInteractive ? 'button' : undefined}
+              aria-label={dayIso ? `${dayIso}${isSelected ? ', selected' : ''}` : undefined}
+              onClick={isInteractive ? () => onSelectDate(dayIso) : undefined}
+              onKeyDown={isInteractive ? (e) => handleKeyDown(e, i, dayIso) : undefined}
+              title={tooltipTitle || undefined}
+              className={[
+                'cal-d',
+                day.type === 'header'    ? 'header'    : '',
+                day.type === 'empty'     ? 'empty'     : '',
+                day.type === 'period'    ? 'period'    : '',
+                day.type === 'predicted' ? 'predicted' : '',
+                day.type === 'ovulation' ? 'ovulation' : '',
+                day.type === 'today'     ? 'today'     : '',
+                day.isToday && day.type !== 'today' ? 'today-ring' : '',
+                isSelected               ? 'selected'  : '',
+              ].join(' ').trim()}
+            >
+              {day.label}
+              {hasLog && <span className="log-indicator-dot" />}
+            </div>
+          )
+        })}
       </div>
 
       <div className="cal-legend">
