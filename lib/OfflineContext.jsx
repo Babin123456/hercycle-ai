@@ -127,11 +127,7 @@ export function OfflineProvider({ children }) {
     }
   };
 
-  const getMasterKey = async () => {
-    // Helper to get key from session storage without a hook, inside async functions
-    const user = { id: '' } // This needs fixing. OfflineClient isn't in a react scope to get user.
-    // Wait, OfflineContext is in a React component `<OfflineProvider>`, we can get user here!
-  }
+
 
   const offlineClient = {
     fetchCycles: async (masterKey) => {
